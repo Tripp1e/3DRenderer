@@ -1,5 +1,6 @@
 import java.awt.Color
-import kotlin.math.sqrt
+import kotlin.math.*
+
 
 class Vertex(
     var x: Double,
@@ -14,59 +15,79 @@ class Triangle(
     var color: Color = Color.WHITE
 )
 
-fun tetrahedon(): ArrayList<Triangle>{
-    val tris = ArrayList<Triangle>()
-    tris.add(Triangle(
-        Vertex( 100.0,  100.0,  100.0),
-        Vertex(-100.0, -100.0,  100.0),
-        Vertex(-100.0,  100.0, -100.0),
-        Color.GREEN
-    ))
+val origin = Vertex(0.0, 0.0, 0.0)
 
-    tris.add(Triangle(
-        Vertex( 100.0,  100.0,  100.0),
-        Vertex(-100.0, -100.0,  100.0),
-        Vertex( 100.0, -100.0, -100.0),
-        Color.CYAN
-    ))
+fun createCube(origin: Vertex, size: Double, color: Color = Color.WHITE): List<Triangle> {
+    val (x, y, z) = listOf(origin.x, origin.y, origin.z)
+    val d = size / 2
 
-    tris.add(Triangle(
-        Vertex(-100.0,  100.0, -100.0),
-        Vertex( 100.0, -100.0, -100.0),
-        Vertex( 100.0,  100.0,  100.0),
-        Color.WHITE
-    ))
+    // Define vertices relative to the origin
+    val vertices = listOf(
+        Vertex(x - d, y - d, z - d), // 0
+        Vertex(x + d, y - d, z - d), // 1
+        Vertex(x + d, y + d, z - d), // 2
+        Vertex(x - d, y + d, z - d), // 3
+        Vertex(x - d, y - d, z + d), // 4
+        Vertex(x + d, y - d, z + d), // 5
+        Vertex(x + d, y + d, z + d), // 6
+        Vertex(x - d, y + d, z + d)  // 7
+    )
 
-    tris.add(Triangle(
-        Vertex(-100.0,  100.0, -100.0),
-        Vertex( 100.0, -100.0, -100.0),
-        Vertex(-100.0, -100.0,  100.0),
-        Color.PINK
-    ))
+    // Define cube faces using vertex indices (2 triangles per face)
+    val faces = listOf(
+        listOf(0, 1, 2, 3),  // Front
+        listOf(4, 5, 6, 7),  // Back
+        listOf(1, 5, 6, 2),  // Left
+        listOf(0, 4, 7, 3),  // Right
+        listOf(4, 5, 1, 0),  // Bottom
+        listOf(7, 6, 2, 3)   // Top
+    )
 
-    return tris
+    // Generate triangles for each face
+    val triangles = mutableListOf<Triangle>()
+    faces.forEach { (i1, i2, i3, i4) ->
+        triangles.add(Triangle(vertices[i1], vertices[i2], vertices[i3], color))
+        triangles.add(Triangle(vertices[i1], vertices[i4], vertices[i3], color))
+    }
+
+    return triangles
 }
 
-fun ballon(): ArrayList<Triangle>{
-    val result = ArrayList<Triangle>()
+fun createSphere(center: Vertex, radius: Double, segments: Int, rings: Int, color: Color = Color.WHITE): List<Triangle> {
+    val triangles = mutableListOf<Triangle>()
 
-    for (t in tetrahedon()) {
-        val m1 = Vertex((t.v1.x + t.v2.x) / 2, (t.v1.y + t.v2.y) / 2, (t.v1.z + t.v2.z) / 2)
-        val m2 = Vertex((t.v2.x + t.v3.x) / 2, (t.v2.y + t.v3.y) / 2, (t.v2.z + t.v3.z) / 2)
-        val m3 = Vertex((t.v1.x + t.v3.x) / 2, (t.v1.y + t.v3.y) / 2, (t.v1.z + t.v3.z) / 2)
+    val vertices = mutableListOf<Vertex>()
 
-        result.add(Triangle(t.v1, m1, m3, t.color))
-        result.add(Triangle(t.v2, m1, m2, t.color))
-        result.add(Triangle(t.v3, m2, m3, t.color))
-        result.add(Triangle(m1, m2, m3, t.color))
-    }
-    for (t in result) {
-        for (v in arrayOf(t.v1, t.v2, t.v3)) {
-            val l = sqrt(v.x * v.x + v.y * v.y + v.z * v.z) / sqrt(30000.0)
-            v.x /= l
-            v.y /= l
-            v.z /= l
+    // Generate vertices for the sphere
+    for (i in 0..rings) {
+        val theta = PI * i / rings // from 0 to PI (latitude)
+        val sinTheta = sin(theta)
+        val cosTheta = cos(theta)
+
+        for (j in 0..segments) {
+            val phi = 2 * PI * j / segments // from 0 to 2PI (longitude)
+            val sinPhi = sin(phi)
+            val cosPhi = cos(phi)
+
+            val x = center.x + radius * sinTheta * cosPhi
+            val y = center.y + radius * sinTheta * sinPhi
+            val z = center.z + radius * cosTheta
+
+            vertices.add(Vertex(x, y, z))
         }
     }
-    return result
+
+    // Generate triangles using the vertices
+    for (i in 0..<rings) {
+        for (j in 0..<segments) {
+            val first = i * (segments + 1) + j
+            val second = first + segments + 1
+
+            // Two triangles per quad
+            triangles.add(Triangle(vertices[first], vertices[second], vertices[first + 1], color))
+            triangles.add(Triangle(vertices[second], vertices[second + 1], vertices[first + 1], color))
+        }
+    }
+
+    return triangles
 }

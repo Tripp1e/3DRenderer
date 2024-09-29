@@ -30,7 +30,7 @@ fun main() {
             graphics2d.color = Color.WHITE
 
             //Matrices
-            val heading = Math.toRadians(headingSlider.value.toDouble())
+            val heading = Math.toRadians(-headingSlider.value.toDouble())
             val headingTransform = Matrix3D(doubleArrayOf(
                 cos(heading),  0.0, sin(heading),
                 0.0,           1.0, 0.0,
@@ -48,8 +48,13 @@ fun main() {
             val img = BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB)
             val zBuffer = DoubleArray(img.width * img.height) { Double.NEGATIVE_INFINITY }
 
-            //Render Tetrahedon
-            for (triangle in tetrahedon()) {
+            //Render
+            val items = ArrayList<Triangle>(
+                createSphere(origin, 75.0, 100, 100) +
+                createCube(origin, 100.0)
+            )
+
+            for (triangle in items) {
                 renderTriangle(img, zBuffer, transform, triangle)
             }
 
@@ -65,7 +70,7 @@ fun main() {
 
     pane.add(renderPanel, BorderLayout.CENTER)
 
-    frame.setSize(400, 400)
+    frame.setSize(1440, 1080)
     frame.isVisible = true
 }
 
